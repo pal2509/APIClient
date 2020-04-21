@@ -346,12 +346,17 @@ namespace APIClient
         /// <param name="filename"></param>
         static public void Download(string startpoint, int token, string filename)
         {
-            string endpoint = startpoint + "/fileserver/FileDownload/" + token;//Criação do link
+            string endpoint = startpoint + "/fileserver/FileDownload/" + token + "/"+ filename;//Criação do link
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(endpoint);//Criação do pedido http
-            request.Method = HTTP_Verb.GET.ToString();//Metodo do pedido
+            request.Method = HTTP_Verb.POST.ToString();//Metodo do pedido
             HttpWebResponse response = null;
-            request.ContentType = "multipart/form-data";//Tipo de dados
+            request.ContentType = "text/plain";//Tipo de dados
             request.Headers.Add("filename", filename);//Nome do ficheiro
+
+            byte[] bytes = Encoding.UTF8.GetBytes(filename);
+            Stream stream = request.GetRequestStream();
+            stream.Write(bytes, 0, bytes.Length);
+
 
             response = (HttpWebResponse)request.GetResponse();//Receber a resposta
             var filePath = AppDomain.CurrentDomain.BaseDirectory + filename;//Caminho do ficheiro
