@@ -49,8 +49,17 @@ namespace APIClient
                                 Console.WriteLine("Password?");
                                 string password = Console.ReadLine();
 
-                                string r = Login(username, password, startpoint, ref token);
-                                Console.WriteLine(r);
+                                int r = Login(username, password, startpoint, ref token);
+                                if (r == 1)
+                                {
+                                    Console.WriteLine("Login com sucesso!!!");
+                                    l = true;
+                                    
+                                }
+                                if(r == -1)Console.WriteLine("Login com sucesso!!!");
+                                if(r == -2)Console.WriteLine("Login com sucesso!!!");
+                                if(r == -3)Console.WriteLine("Login com sucesso!!!");
+                                
                                 break;
                             }
                         case 2:
@@ -130,7 +139,7 @@ namespace APIClient
         /// <param name="password">Password do utilizador</param>
         /// <param name="startpoint">Link startpoint com o localhost</param>
         /// <returns></returns>
-        static public string Login(string username, string password, string startpoint, ref int token)
+        static public int Login(string username, string password, string startpoint, ref int token)
         {
             //Criação do pedido http
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/fileserver/login/" + username + "/" + password);
@@ -156,30 +165,30 @@ namespace APIClient
                         if (r.CompareTo("-1") == 0)
                         {
                             token = -1;
-                            return "Username e/ou password errados!!!";
+                            return -1;
                         }
                         else if (r.CompareTo("-2") == 0)
                         {
                             token = -2;
-                            return "User já está loged in";
+                            return -2;
                         }
                         else
                         {
                             token = int.Parse(r);
-                            return "Login com sucesso!!!";
+                            return 1;
                         }
                     }
                     else
                     {
                         token = -3;
-                        return "Erro inesperado!!!";
+                        return -3;
                     }
                 }
             }
             catch (Exception e)
             {
                 token = -4;
-                return e.ToString();
+                return - 4;
             }
         }
 
