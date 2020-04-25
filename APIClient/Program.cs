@@ -28,12 +28,13 @@ namespace APIClient
 
 
 
-            bool k = true, l = true;
+            bool k = true, l = false;
             while (k)
             {
                 Console.WriteLine("Opcões:");
                 Console.WriteLine("1-Login");
                 Console.WriteLine("2-Sair");
+                Console.WriteLine("3-Registo");
                 string op;
                 int n;
                 op = Console.ReadLine();
@@ -56,15 +57,24 @@ namespace APIClient
                                     l = true;
                                     
                                 }
-                                if(r == -1)Console.WriteLine("Login com sucesso!!!");
-                                if(r == -2)Console.WriteLine("Login com sucesso!!!");
-                                if(r == -3)Console.WriteLine("Login com sucesso!!!");
+                                if(r == -1)Console.WriteLine("Username ou password não existe.");
+                                if(r == -2)Console.WriteLine("Já está loged in.");
+                                if(r < -3)Console.WriteLine("Erro inesperado!!!");
                                 
                                 break;
                             }
                         case 2:
                             {
                                 k = false;
+                                break;
+                            }
+                        case 3:
+                            {
+                                Console.WriteLine("Username?");
+                                string username = Console.ReadLine();
+                                Console.WriteLine("Password?");
+                                string password = Console.ReadLine();
+                                Registration(username, password, startpoint);
                                 break;
                             }
                     }
@@ -76,7 +86,8 @@ namespace APIClient
                             Console.WriteLine("1-FileList");
                             Console.WriteLine("2-Download");
                             Console.WriteLine("3-Upload");
-                            Console.WriteLine("4-Logout");
+                            Console.WriteLine("4-Delete File");
+                            Console.WriteLine("5-Logout");
                             op = Console.ReadLine();
 
                             if (int.TryParse(op, out n))
@@ -114,6 +125,13 @@ namespace APIClient
                                         }
                                     case 4:
                                         {
+                                            Console.WriteLine("Nome do ficheiro?");
+                                            string filename = Console.ReadLine();
+                                            DeleteFile(filename, startpoint, token);
+                                            break;
+                                        }
+                                    case 5:
+                                        {
                                             Console.WriteLine(Logout(ref token, startpoint, ref l));
                                             break;
                                         }
@@ -123,12 +141,6 @@ namespace APIClient
                         }
                     }
                 }
-
-
-
-
- 
-
             }
 
         }
@@ -190,6 +202,70 @@ namespace APIClient
                 token = -4;
                 return - 4;
             }
+        }
+
+        static public void DeleteFile(string filename, string startpoint, int token)
+        {
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/fileserver/FileDelete/" + token.ToString());
+            request.Method = HTTP_Verb.POST.ToString(); //Verbo do pedido http
+            request.ContentType = "multipart/form-data";//
+            request.Headers.Add("filename", filename);
+            request.ContentLength = 0;
+
+            HttpWebResponse res = (HttpWebResponse)request.GetResponse();
+
+            //Criação do fluxo para a resposta
+            using (Stream responseStream = res.GetResponseStream())
+            {
+                if (responseStream != null)//Verificação se a resposta está vazia
+                {
+                    string r;
+                    //Criação do leitor da resposta
+                    using (StreamReader reader = new StreamReader(responseStream))
+                    {
+                        r = reader.ReadToEnd();//Leitura da resposta para uma string                          
+                    }
+
+                    if (r.CompareTo("-1") == 0) Console.WriteLine("Token inválido!!!");
+                    else if (r.CompareTo("-2") == 0) Console.WriteLine("Ficheiro não existe!!!");
+                    else Console.WriteLine("Ficheiro eliminado com sucesso!!!");
+                }
+                else Console.WriteLine("Erro - Tente novamente.");
+            }
+
+        }
+
+        static public void Registration(string usrnm, string psswd, string startpoint)
+        {
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/fileserver/SignUp");
+            request.Method = HTTP_Verb.POST.ToString(); //Verbo do pedido http
+
+            request.ContentType = "multipart/form-data";//
+            request.Headers.Add("username", usrnm);
+            request.Headers.Add("password", psswd);
+            request.ContentLength = 0;
+
+            HttpWebResponse res = (HttpWebResponse)request.GetResponse();
+
+            //Criação do fluxo para a resposta
+            using (Stream responseStream = res.GetResponseStream())
+            {
+                if (responseStream != null)//Verificação se a resposta está vazia
+                {
+                    string r;
+                    //Criação do leitor da resposta
+                    using (StreamReader reader = new StreamReader(responseStream))
+                    {
+                        r = reader.ReadToEnd();//Leitura da resposta para uma string                          
+                    }
+
+                    if (r.CompareTo("-1") == 0) Console.WriteLine("Username já exitente!!!");
+                    else Console.WriteLine("Pedido feito com sucesso");
+                }
+                else Console.WriteLine("Erro - Tente novamente");
+            }
+
+
         }
 
 
@@ -355,23 +431,18 @@ namespace APIClient
         /// <param name="filename"></param>
         static public void Download(string startpoint, int token, string filename)
         {
-            string endpoint = startpoint + "/fileserver/FileDownload/" + token + "/"+ filename;//Criação do link
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(endpoint);//Criação do pedido http
-            request.Method = HTTP_Verb.POST.ToString();//Metodo do pedido
-            HttpWebResponse response = null;
-            request.ContentType = "text/plain";//Tipo de dados
-            request.Headers.Add("filename", filename);//Nome do ficheiro
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/fileserver/FileDownload/" + token.ToString());
+            request.Method = HTTP_Verb.POST.ToString(); //Verbo do pedido http
+            request.ContentType = "multipart/form-data";//
+            request.Headers.Add("filename", filename);
+            request.ContentLength = 0;
 
-            byte[] bytes = Encoding.UTF8.GetBytes(filename);
-            Stream stream = request.GetRequestStream();
-            stream.Write(bytes, 0, bytes.Length);
+            HttpWebResponse res = (HttpWebResponse)request.GetResponse();
 
-
-            response = (HttpWebResponse)request.GetResponse();//Receber a resposta
             var filePath = AppDomain.CurrentDomain.BaseDirectory + filename;//Caminho do ficheiro
             using (var fs = new System.IO.FileStream(filePath, System.IO.FileMode.Create))//Criação de uma stream para escrita do ficheiro
             {
-                response.GetResponseStream().CopyTo(fs);//Receber a resposta e copia-la para a stream fs;
+                res.GetResponseStream().CopyTo(fs);//Receber a resposta e copia-la para a stream fs;
             }
 
         }
