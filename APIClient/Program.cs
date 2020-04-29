@@ -55,7 +55,6 @@ namespace APIClient
                                 {
                                     Console.WriteLine("Login com sucesso!!!");
                                     l = true;
-
                                 }
                                 if (r == -1) Console.WriteLine("Username ou password não existe.");
                                 if (r == -2) Console.WriteLine("Já está loged in.");
@@ -74,7 +73,10 @@ namespace APIClient
                                 string username = Console.ReadLine();
                                 Console.WriteLine("Password?");
                                 string password = Console.ReadLine();
-                                Registration(username, password, startpoint);
+                                int r = Registration(username, password, startpoint);
+                                if (r == 1) Console.WriteLine("Sucesso");
+                                if (r == -1) Console.WriteLine("Nome de utilizador já existe!!!");
+                                if (r == -4) Console.WriteLine("Erro - Inesperado");
                                 break;
                             }
                     }
@@ -105,7 +107,11 @@ namespace APIClient
                                         {
                                             Console.WriteLine("Nome do ficheiro?");
                                             string filename = Console.ReadLine();
-                                            Download(startpoint, token, filename);
+                                            int r = Download(startpoint, token, filename);
+                                            if (r == 1) Console.WriteLine("Sucesso");
+                                            if (r == -1) Console.WriteLine("Token inválido");
+                                            if (r == -2) Console.WriteLine("Ficheiro não existe!!!");
+                                            
                                             break;
                                         }
                                     case 3:
@@ -113,16 +119,19 @@ namespace APIClient
                                             Console.WriteLine("Nome do ficheiro?");
                                             TimeSpan time = new TimeSpan(-1);
                                             string filename = Console.ReadLine();
-                                            Console.WriteLine("Adicionar tempo de vida?");
+                                            Console.WriteLine("Adicionar tempo de vida?(Y-Sim N-Não");
                                             string y = Console.ReadLine();
                                             if (y.CompareTo("Y") == 0 || y.CompareTo("y") == 0)
                                             {
-                                                Console.WriteLine("Tempo?");
+                                                Console.WriteLine("Tempo?()");
                                                 time = TimeSpan.Parse(Console.ReadLine());
                                             }
                                             if (File.Exists(AppDomain.CurrentDomain.BaseDirectory + filename))
                                             {
-                                                Upload(startpoint, token, filename, time);
+                                                int r = Upload(startpoint, token, filename, time);
+                                                if (r == 1) Console.WriteLine("Sucesso");
+                                                if (r == -1) Console.WriteLine("Token inválido");
+                                                if (r == -2) Console.WriteLine("Ficheiro não existe!!!");
                                                 break;
                                             }
                                             else
@@ -136,7 +145,12 @@ namespace APIClient
                                         {
                                             Console.WriteLine("Nome do ficheiro?");
                                             string filename = Console.ReadLine();
-                                            DeleteFile(filename, startpoint, token);
+                                            int r = DeleteFile(filename, startpoint, token);
+                                            if (r == 1) Console.WriteLine("Ficheiro " + filename + " eliminado com sucesso.");
+                                            if (r == -1) Console.WriteLine("Token inválido");
+                                            if (r == -2) Console.WriteLine("Ficheiro não existe!!!");
+                                            if (r == -3) Console.WriteLine("Não foi possivel chegar ao seu workspace.");
+                                            if (r == -4) Console.WriteLine("Não foi possivel obter resposta");
                                             break;
                                         }
                                     case 5:
@@ -148,7 +162,12 @@ namespace APIClient
                                         {
                                             Console.WriteLine("Nome de utilizador?");
                                             string username = Console.ReadLine();
-                                            AcceptRequest(startpoint, token, username);
+                                            int r = AcceptRequest(startpoint, token, username);
+                                            if (r == 1) Console.WriteLine("Utilizador " + username + " aceite com sucesso.");
+                                            if (r == -1) Console.WriteLine("Token inválido");
+                                            if (r == -2) Console.WriteLine("Não tem permissão para aceitar utilizadores");
+                                            if (r == -3) Console.WriteLine("Não existe nehnum pedido com esse nome de utilizador!!!");
+                                            if (r == -4) Console.WriteLine("Não foi possivel obter resposta");
                                             break;
                                         }
                                     case 7:
@@ -166,7 +185,7 @@ namespace APIClient
 
         }
 
-        static public void AcceptRequest(string startpoint, int token, string username)
+        static public int AcceptRequest(string startpoint, int token, string username)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/fileserver/RequestManagement/" + token.ToString());
             request.Method = HTTP_Verb.POST.ToString(); //Verbo do pedido http
@@ -187,11 +206,9 @@ namespace APIClient
                     {
                         r = reader.ReadToEnd();//Leitura da resposta para uma string                          
                     }
-                    Console.WriteLine(r);
+                    return int.Parse(r);
                 }
-                else Console.WriteLine("Erro - Tente novamente");
-
-
+                else return -4;
             }
         }
 
@@ -283,7 +300,7 @@ namespace APIClient
             }
         }
 
-        static public void DeleteFile(string filename, string startpoint, int token)
+        static public int DeleteFile(string filename, string startpoint, int token)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/fileserver/FileDelete/" + token.ToString());
             request.Method = HTTP_Verb.POST.ToString(); //Verbo do pedido http
@@ -305,16 +322,15 @@ namespace APIClient
                         r = reader.ReadToEnd();//Leitura da resposta para uma string                          
                     }
 
-                    if (r.CompareTo("-1") == 0) Console.WriteLine("Token inválido!!!");
-                    else if (r.CompareTo("-2") == 0) Console.WriteLine("Ficheiro não existe!!!");
-                    else Console.WriteLine("Ficheiro eliminado com sucesso!!!");
+                    return int.Parse(r);
+
                 }
-                else Console.WriteLine("Erro - Tente novamente.");
+                else return -4;
             }
 
         }
 
-        static public void Registration(string usrnm, string psswd, string startpoint)
+        static public int Registration(string usrnm, string psswd, string startpoint)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/fileserver/SignUp");
             request.Method = HTTP_Verb.POST.ToString(); //Verbo do pedido http
@@ -338,13 +354,10 @@ namespace APIClient
                         r = reader.ReadToEnd();//Leitura da resposta para uma string                          
                     }
 
-                    if (r.CompareTo("-1") == 0) Console.WriteLine("Username já exitente!!!");
-                    else Console.WriteLine("Pedido feito com sucesso");
+                    return int.Parse(r);
                 }
-                else Console.WriteLine("Erro - Tente novamente");
+                else return -4;
             }
-
-
         }
 
 
@@ -453,7 +466,7 @@ namespace APIClient
         /// <param name="startpoint">link de inicio</param>
         /// <param name="token">token do utilizador</param>
         /// <param name="filename">nome do ficherio para ser uploaded</param>
-        static public void Upload(string startpoint, int token, string filename, TimeSpan time)
+        static public int Upload(string startpoint, int token, string filename, TimeSpan time)
         {
             string endpoint = startpoint + "/fileserver/FileUpload/" + token.ToString();//Criação do link completo
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(endpoint);//Criação do pedido http
@@ -467,6 +480,7 @@ namespace APIClient
                 request.Headers.Add("ttl", null);
             }
             else request.Headers.Add("ttl", time.ToString());
+            if (!File.Exists(AppDomain.CurrentDomain.BaseDirectory + filename))return -2;
             //Stream para escrita do ficheiro pedido
             using (FileStream fileStream = new FileStream(AppDomain.CurrentDomain.BaseDirectory + filename, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
@@ -484,26 +498,21 @@ namespace APIClient
                 }
             }
             //-----------------------------------------------------------------------
-            try
-            {
-                response = (HttpWebResponse)request.GetResponse();//Receber a resposta
+            string r = "-3";
+          
+               response = (HttpWebResponse)request.GetResponse();//Receber a resposta
 
-                using (Stream responseStream = response.GetResponseStream())//Stram para ler a resposta
+                using (Stream responseStream = response.GetResponseStream())//Stream para ler a resposta
                 {
                     if (responseStream != null)
                     {
                         using (StreamReader reader = new StreamReader(responseStream))//Leitura da stream de resposta
                         {
-                            Console.Write(reader.ReadToEnd());
+                            r = reader.ReadToEnd();
                         }
                     }
                 }
-
-            }
-            catch (Exception ex) 
-            {
-                Console.WriteLine(ex.ToString());
-            }
+                return int.Parse(r);
         }
 
         /// <summary>
@@ -512,7 +521,7 @@ namespace APIClient
         /// <param name="startpoint"></param>
         /// <param name="token"></param>
         /// <param name="filename"></param>
-        static public void Download(string startpoint, int token, string filename)
+        static public int Download(string startpoint, int token, string filename)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/fileserver/FileDownload/" + token.ToString());
             request.Method = HTTP_Verb.POST.ToString(); //Verbo do pedido http
@@ -527,51 +536,10 @@ namespace APIClient
             {
                 res.GetResponseStream().CopyTo(fs);//Receber a resposta e copia-la para a stream fs;
             }
-
+            return 1;
         }
 
 
-        static public void Upload(string uri, string filePath)
-        {
-            string formdataTemplate = "Content-Disposition: form-data; filename=\"{0}\";\r\nContent-Type: image/jpeg\r\n\r\n";
-            string boundary = "---------------------------" + DateTime.Now.Ticks.ToString("x");
-            byte[] boundarybytes = Encoding.ASCII.GetBytes("\r\n--" + boundary + "\r\n");
-
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
-            request.ServicePoint.Expect100Continue = false;
-            request.Method = "POST";
-            request.ContentType = "multipart/form-data; boundary=" + boundary;
-            request.Headers.Add("filename", "test.jpg");
-
-            using (FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-            {
-                using (Stream requestStream = request.GetRequestStream())
-                {
-                    requestStream.Write(boundarybytes, 0, boundarybytes.Length);
-                    string formitem = string.Format(formdataTemplate, Path.GetFileName(filePath));
-                    byte[] formbytes = Encoding.UTF8.GetBytes(formitem);
-                    requestStream.Write(formbytes, 0, formbytes.Length);
-                    byte[] buffer = new byte[1024 * 4];
-                    int bytesLeft = 0;
-
-                    while ((bytesLeft = fileStream.Read(buffer, 0, buffer.Length)) > 0)
-                    {
-                        requestStream.Write(buffer, 0, bytesLeft);
-                    }
-
-                }
-            }
-
-            try
-            {
-                using (HttpWebResponse response = (HttpWebResponse)request.GetResponse()) { }
-
-                Console.WriteLine("Success");
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
-        }
+ 
     }
 }
