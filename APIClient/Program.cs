@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using Newtonsoft.Json;
+using System.Threading;
+using static APIClient.Program;
 
 namespace APIClient
 {
@@ -48,17 +51,39 @@ namespace APIClient
                                 Console.WriteLine("Username?");
                                 string username = Console.ReadLine();
                                 Console.WriteLine("Password?");
-                                string password = Console.ReadLine();
+                                string password = "";
+                                do
+                                {
+                                    ConsoleKeyInfo key = Console.ReadKey(true);
+                                    // Backspace Should Not Work
+                                    if (key.Key != ConsoleKey.Backspace && key.Key != ConsoleKey.Enter)
+                                    {
+                                        password += key.KeyChar;
+                                        Console.Write("*");
+                                    }
+                                    else
+                                    {
+                                        if (key.Key == ConsoleKey.Backspace && password.Length > 0)
+                                        {
+                                            password = password.Substring(0, (password.Length - 1));
+                                            Console.Write("\b \b");
+                                        }
+                                        else if (key.Key == ConsoleKey.Enter)
+                                        {
+                                            break;
+                                        }
+                                    }
+                                } while (true);
 
                                 int r = Login(username, password, startpoint, ref token);
                                 if (r == 1)
                                 {
-                                    Console.WriteLine("Login com sucesso!!!");
+                                    Console.WriteLine("\nLogin com sucesso!!!");
                                     l = true;
                                 }
-                                if (r == -1) Console.WriteLine("Username ou password não existe.");
-                                if (r == -2) Console.WriteLine("Já está loged in.");
-                                if (r < -3) Console.WriteLine("Erro inesperado!!!");
+                                if (r == -1) Console.WriteLine("\nUsername ou password não existe.");
+                                if (r == -2) Console.WriteLine("\nJá está loged in.");
+                                if (r < -3) Console.WriteLine("\nErro inesperado!!!");
 
                                 break;
                             }
@@ -72,11 +97,38 @@ namespace APIClient
                                 Console.WriteLine("Username?");
                                 string username = Console.ReadLine();
                                 Console.WriteLine("Password?");
-                                string password = Console.ReadLine();
+                                string password = "";
+                                do
+                                {
+                                    ConsoleKeyInfo key = Console.ReadKey(true);
+                                    // Backspace Should Not Work
+                                    if (key.Key != ConsoleKey.Backspace && key.Key != ConsoleKey.Enter)
+                                    {
+                                        password += key.KeyChar;
+                                        Console.Write("*");
+                                    }
+                                    else
+                                    {
+                                        if (key.Key == ConsoleKey.Backspace && password.Length > 0)
+                                        {
+                                            password = password.Substring(0, (password.Length - 1));
+                                            Console.Write("\b \b");
+                                        }
+                                        else if (key.Key == ConsoleKey.Enter)
+                                        {
+                                            break;
+                                        }
+                                    }
+                                } while (true);
                                 int r = Registration(username, password, startpoint);
                                 if (r == 1) Console.WriteLine("Sucesso");
                                 if (r == -1) Console.WriteLine("Nome de utilizador já existe!!!");
                                 if (r == -4) Console.WriteLine("Erro - Inesperado");
+                                break;
+                            }
+                        default:
+                            {
+                                Console.WriteLine("Opção inválida!!!");
                                 break;
                             }
                     }
@@ -85,13 +137,15 @@ namespace APIClient
                     {
                         while (l)
                         {
-                            Console.WriteLine("1-FileList");
+                            Console.WriteLine("1-Lista ficherios");
                             Console.WriteLine("2-Download");
                             Console.WriteLine("3-Upload");
-                            Console.WriteLine("4-Delete File");
-                            Console.WriteLine("5-Lista de pedidos de registo");
-                            Console.WriteLine("6-Aceitar pedidos");
-                            Console.WriteLine("7-Logout");
+                            Console.WriteLine("4-Apagar ficheiro");
+                            Console.WriteLine("5-Copiar ficheiro");
+                            Console.WriteLine("6-Lista de pedidos de registo");
+                            Console.WriteLine("7-Aceitar pedidos");
+                            Console.WriteLine("8-Mensagens");
+                            Console.WriteLine("9-Logout");
                             op = Console.ReadLine();
 
                             if (int.TryParse(op, out n))
@@ -100,7 +154,8 @@ namespace APIClient
                                 {
                                     case 1:
                                         {
-                                            Console.WriteLine(FileList(ref token, startpoint));
+                                            string[] o = FileList(ref token, startpoint);
+                                            foreach (string s in o) Console.WriteLine(s);
                                             break;
                                         }
                                     case 2:
@@ -119,11 +174,11 @@ namespace APIClient
                                             Console.WriteLine("Nome do ficheiro?");
                                             TimeSpan time = new TimeSpan(-1);
                                             string filename = Console.ReadLine();
-                                            Console.WriteLine("Adicionar tempo de vida?(Y-Sim N-Não");
+                                            Console.WriteLine("Adicionar tempo de vida?(Y-Sim N-Não)");
                                             string y = Console.ReadLine();
                                             if (y.CompareTo("Y") == 0 || y.CompareTo("y") == 0)
                                             {
-                                                Console.WriteLine("Tempo?()");
+                                                Console.WriteLine("Tempo?(days.hh:mm:ss)");
                                                 time = TimeSpan.Parse(Console.ReadLine());
                                             }
                                             if (File.Exists(AppDomain.CurrentDomain.BaseDirectory + filename))
@@ -155,10 +210,23 @@ namespace APIClient
                                         }
                                     case 5:
                                         {
-                                            RequestList(startpoint, token);
+                                            Console.WriteLine("Nome do ficheiro a copiar?");
+                                            string filename = Console.ReadLine();
+                                            Console.WriteLine("Nome do ficheiro para o novo ficheiro?");
+                                            string newfile = Console.ReadLine();
+                                            int r = CopyFile(filename, newfile, startpoint, token);
+                                            if (r == 1) Console.WriteLine("Ficheiro copiado com sucesso.");
+                                            if (r == -1) Console.WriteLine("Token inválido");
+                                            if (r == -2) Console.WriteLine("Ficheiro não existe!!!");
+                                            if (r == -4) Console.WriteLine("Não foi possivel chegar ao servidor!!!");
                                             break;
                                         }
                                     case 6:
+                                        {
+                                            RequestList(startpoint, token);
+                                            break;
+                                        }
+                                    case 7:
                                         {
                                             Console.WriteLine("Nome de utilizador?");
                                             string username = Console.ReadLine();
@@ -170,11 +238,24 @@ namespace APIClient
                                             if (r == -4) Console.WriteLine("Não foi possivel obter resposta");
                                             break;
                                         }
-                                    case 7:
+                                    case 8:
                                         {
-                                            Console.WriteLine(Logout(ref token, startpoint, ref l));
+                                            Messages(startpoint, token);
+
                                             break;
                                         }
+                                    case 9:
+                                        {
+                                            Console.WriteLine(Logout(ref token, startpoint, ref l));
+                                            
+                                            break;
+                                        }
+                                    default:
+                                        {
+                                            Console.WriteLine("Opção inválida!!!");
+                                            break;
+                                        }
+
                                 }
 
                             }
@@ -184,6 +265,275 @@ namespace APIClient
             }
 
         }
+
+
+        static public int Messages(string startpoint, int token)
+        {
+            bool k = true;
+            string op;
+            while(k)
+            {
+                Console.WriteLine("1-Sair");
+                Console.WriteLine("2-Ver canais subscritos");
+                Console.WriteLine("3-Subscrever a canal");
+                Console.WriteLine("4-Ver mensagens");
+                int n;
+                op = Console.ReadLine();
+                if (int.TryParse(op, out n))
+                {
+                    switch(n)
+                    {
+                        case 1:
+                            {
+                                return 1;
+                            }
+                        case 2:
+                            {
+                                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/messages/GetUChannels/" + token.ToString());
+                                request.Method = HTTP_Verb.GET.ToString(); //Verbo do pedido http
+
+                                HttpWebResponse res = (HttpWebResponse)request.GetResponse();
+                                string r = null;
+                                //Criação do fluxo para a resposta
+                                using (Stream responseStream = res.GetResponseStream())
+                                {
+                                    //Criação do leitor da resposta
+                                    JsonSerializer serializer = new JsonSerializer();
+                                    IEnumerable<string> o = null;
+                                    using (StreamReader sr = new StreamReader(responseStream))
+                                    using (JsonReader reader = new JsonTextReader(sr))
+                                    {
+                                        while (!sr.EndOfStream)
+                                        {
+                                            o = serializer.Deserialize<IEnumerable<string>>(reader);
+                                        }
+                                    }
+
+                                    foreach (string s in o) Console.WriteLine(s);
+
+                                }
+
+                                Console.WriteLine(r);
+                                
+
+                                break;
+                            }
+                        case 3:
+                            {
+                                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/messages/GetAllChannels/" + token.ToString());
+                                request.Method = HTTP_Verb.GET.ToString(); //Verbo do pedido http
+
+                                HttpWebResponse res = (HttpWebResponse)request.GetResponse();
+                                string r = null;
+                                //Criação do fluxo para a resposta
+                                using (Stream responseStream = res.GetResponseStream())
+                                {
+                                    if (responseStream != null)//Verificação se a resposta está vazia
+                                    {
+                                        //Criação do leitor da resposta
+                                        JsonSerializer serializer = new JsonSerializer();
+                                        IEnumerable<string> o = null;
+                                        using (StreamReader sr = new StreamReader(responseStream))
+                                        using (JsonReader reader = new JsonTextReader(sr))
+                                        {
+                                            while (!sr.EndOfStream)
+                                            {
+                                                o = serializer.Deserialize<IEnumerable<string>>(reader);
+                                            }
+                                        }
+
+                                        foreach (string s in o) Console.WriteLine(s);
+                                    }
+
+                                }
+
+                                Console.WriteLine("Nome do canal a subscrever?");
+
+                                string c = Console.ReadLine();
+
+                                request = (HttpWebRequest)WebRequest.Create(startpoint + "/messages/SubChannel/" + token.ToString());
+                                request.Method = HTTP_Verb.POST.ToString(); //Verbo do pedido http
+                                request.ContentType = "multipart/form-data";//
+                                request.Headers.Add("channel", c);
+                                request.ContentLength = 0;
+
+
+                                res = (HttpWebResponse)request.GetResponse();
+                                r = null;
+                                //Criação do fluxo para a resposta
+                                using (Stream responseStream = res.GetResponseStream())
+                                {
+                                    if (responseStream != null)//Verificação se a resposta está vazia
+                                    {
+
+                                        //Criação do leitor da resposta
+                                        using (StreamReader reader = new StreamReader(responseStream))
+                                        {
+                                            r = reader.ReadToEnd();//Leitura da resposta para uma string                          
+                                        }
+
+                                    }
+
+                                }
+
+                                int f = int.Parse(r);
+                                if (f == -1) Console.WriteLine("Token inválido!!!");
+                                if (f == -2) Console.WriteLine("Canal não existe!!!");
+                                if (f == 1) Console.WriteLine("Sucesso");
+
+                                break;
+                            }
+                        case 4:
+                            {
+
+                                Console.WriteLine("Nome do canal?");
+                                string channel = Console.ReadLine();
+                                //GetMessage(startpoint,token,channel);
+                                var autoEvent = new AutoResetEvent(true);
+
+                                var CheckMessages = new GetMessages(startpoint,token,channel);
+
+                                var stateTimer = new Timer(CheckMessages.CheckStatus, autoEvent, 0, 20 * 1000);
+                                ConsoleKey key;
+                                bool j = true;
+                                while (j)
+                                {
+                                    key = Console.ReadKey().Key;
+                                    if (key == ConsoleKey.Escape)
+                                    {
+                                        stateTimer.Dispose();
+                                        j = false;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        string message = key + Console.ReadLine();
+                                        SendMessage(startpoint, token, channel, message);
+                                    }
+                                }
+                                break;
+                            }
+                        default:
+                            {
+                                Console.WriteLine("Opção inválida!!!");
+                                break;
+                            }
+
+                    }
+                }
+
+            }
+
+            return 1;
+
+        }
+
+        
+        static public void SendMessage(string startpoint, int token, string channel, string message)
+        {
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/messages/SendMessage/" + token.ToString());
+            request.Method = HTTP_Verb.POST.ToString(); //Verbo do pedido http
+            request.ContentType = "multipart/form-data";//
+            request.Headers.Add("channel", channel);
+            request.Headers.Add("message", message);
+            request.ContentLength = 0;
+
+
+            HttpWebResponse res = (HttpWebResponse)request.GetResponse();
+            string r = null;
+            //Criação do fluxo para a resposta
+            using (Stream responseStream = res.GetResponseStream())
+            {
+                if (responseStream != null)//Verificação se a resposta está vazia
+                {
+
+                    //Criação do leitor da resposta
+                    using (StreamReader reader = new StreamReader(responseStream))
+                    {
+                        r = reader.ReadToEnd();//Leitura da resposta para uma string                          
+                    }
+
+                }
+
+            }
+            int f = int.Parse(r);
+            if (f == -1) Console.WriteLine("Token inválido!!!");
+            if (f == -2) Console.WriteLine("Não está subscrito!!!");
+        }
+
+
+
+
+        static public void GetMessage(string startpoint, int token, string channel)
+        {
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/messages/GetMessage/" + token.ToString());
+            request.Method = HTTP_Verb.POST.ToString(); //Verbo do pedido http
+            request.ContentType = "multipart/form-data";//
+            request.Headers.Add("channel", channel);
+            request.ContentLength = 0;
+
+            HttpWebResponse res = (HttpWebResponse)request.GetResponse();
+            string r = null;
+            
+            //Criação do fluxo para a resposta
+            using (Stream responseStream = res.GetResponseStream())
+            {
+                
+                if (responseStream != null)//Verificação se a resposta está vazia
+                {
+
+                    //Criação do leitor da resposta
+                    JsonSerializer serializer = new JsonSerializer();
+                    IEnumerable<string> o = null;
+                    using (StreamReader sr = new StreamReader(responseStream))
+                    using (JsonReader reader = new JsonTextReader(sr))
+                    {
+                        while (!sr.EndOfStream)
+                        {
+                            o = serializer.Deserialize<IEnumerable<string>>(reader);
+                        }
+                    }
+
+                    foreach (string s in o) Console.WriteLine(s);
+
+
+                }
+               
+
+            }                             
+        }
+
+
+
+        static public int CopyFile(string filename, string newfile,string startpoint, int token)
+        {
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/fileserver/FileCopy/" + token.ToString());
+            request.Method = HTTP_Verb.POST.ToString(); //Verbo do pedido http
+            request.ContentType = "multipart/form-data";//
+            request.Headers.Add("filename", filename);
+            request.Headers.Add("newfile", newfile);
+            request.ContentLength = 0;
+
+            HttpWebResponse res = (HttpWebResponse)request.GetResponse();
+
+            //Criação do fluxo para a resposta
+            using (Stream responseStream = res.GetResponseStream())
+            {
+                if (responseStream != null)//Verificação se a resposta está vazia
+                {
+                    string r;
+                    //Criação do leitor da resposta
+                    using (StreamReader reader = new StreamReader(responseStream))
+                    {
+                        r = reader.ReadToEnd();//Leitura da resposta para uma string                          
+                    }
+                    return int.Parse(r);
+                }
+                else return -4;
+            }
+
+        }
+
 
         static public int AcceptRequest(string startpoint, int token, string username)
         {
@@ -226,17 +576,20 @@ namespace APIClient
             {
                 if (responseStream != null)//Verificação se a resposta está vazia
                 {
-                    string r;
-                    //Criação do leitor da resposta
-                    using (StreamReader reader = new StreamReader(responseStream))
+                    JsonSerializer serializer = new JsonSerializer();
+                    IEnumerable<string> o = null;
+                    using (StreamReader sr = new StreamReader(responseStream))
+                    using (JsonReader reader = new JsonTextReader(sr))
                     {
-                        r = reader.ReadToEnd();//Leitura da resposta para uma string                          
+                        while (!sr.EndOfStream)
+                        {
+                            o = serializer.Deserialize<IEnumerable<string>>(reader);
+                        }
                     }
-                    Console.WriteLine(r);
+
+                    foreach (string s in o) Console.WriteLine(s);
                 }
                 else Console.WriteLine("Erro - Tente novamente");
-
-
             }
         }
 
@@ -367,39 +720,34 @@ namespace APIClient
         /// <param name="token">token do utilizador</param>
         /// <param name="startpoint">começo do link para o pedido</param>
         /// <returns>retorna uma string com os nomes dos ficherios</returns>
-        static public string FileList(ref int token, string startpoint)
+        static public string[] FileList(ref int token, string startpoint)
         {
             //Criação do pedido http
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/fileserver/dir/" + token.ToString());
             request.Method = HTTP_Verb.GET.ToString(); //Verbo do pedido http
 
-            try
+            //Resposta do pedido
+            HttpWebResponse res = (HttpWebResponse)request.GetResponse();
+            string[] o = { "Erro - Não foi possivel obter resposta do servidor"};
+            //Criação do fluxo para a resposta
+            using (Stream responseStream = res.GetResponseStream())
             {
-                //Resposta do pedido
-                HttpWebResponse res = (HttpWebResponse)request.GetResponse();
-
-                //Criação do fluxo para a resposta
-                using (Stream responseStream = res.GetResponseStream())
+                if (responseStream != null)//Verificação se a resposta está vazia
                 {
-                    if (responseStream != null)//Verificação se a resposta está vazia
+                    //Criação do leitor da resposta
+                    JsonSerializer serializer = new JsonSerializer();
+                    
+                    using (StreamReader sr = new StreamReader(responseStream))
+                    using (JsonReader reader = new JsonTextReader(sr))
                     {
-                        string r;
-                        //Criação do leitor da resposta
-                        using (StreamReader reader = new StreamReader(responseStream))
+                        while (!sr.EndOfStream)
                         {
-                            r = reader.ReadToEnd();//Leitura da resposta para uma string                          
+                            o = serializer.Deserialize<string[]>(reader);
                         }
-                         return r;                       
                     }
-                    else
-                    {
-                        return "Erro inesperado!!!";
-                    }
+                    return o;
                 }
-            }
-            catch (Exception e)
-            {
-                return e.ToString();
+                else return o;
             }
         }
 
@@ -536,10 +884,65 @@ namespace APIClient
             {
                 res.GetResponseStream().CopyTo(fs);//Receber a resposta e copia-la para a stream fs;
             }
-            return 1;
+            return int.Parse(res.Headers["r"]);
         }
 
 
  
+    }
+
+    class GetMessages
+    {
+        private int token;
+        private string startpoint;
+        private string channel;
+
+
+        public GetMessages(string startpoint, int token, string channel)
+        {
+            this.startpoint = startpoint;
+            this.channel = channel;
+            this.token = token;
+        }
+
+        // This method is called by the timer delegate.
+        public void CheckStatus(Object stateInfo)
+        {
+            AutoResetEvent autoEvent = (AutoResetEvent)stateInfo;
+            GetMessage(startpoint, token, channel);
+
+        }
+
+        public void GetMessage(string startpoint, int token, string channel)
+        {
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/messages/GetMessage/" + token.ToString());
+            request.Method = HTTP_Verb.POST.ToString(); //Verbo do pedido http
+            request.ContentType = "multipart/form-data";//
+            request.Headers.Add("channel", channel);
+            request.ContentLength = 0;
+
+            HttpWebResponse res = (HttpWebResponse)request.GetResponse();
+            string r = null;
+
+            //Criação do fluxo para a resposta
+            using (Stream responseStream = res.GetResponseStream())
+            {
+                if (responseStream != null)//Verificação se a resposta está vazia
+                {
+                    //Criação do leitor da resposta
+                    JsonSerializer serializer = new JsonSerializer();
+                    string[] o = null;
+                    using (StreamReader sr = new StreamReader(responseStream))
+                    using (JsonReader reader = new JsonTextReader(sr))
+                    {
+                        while (!sr.EndOfStream)
+                        {
+                            o = serializer.Deserialize<string[]>(reader);
+                        }
+                    }
+                    foreach (string s in o) Console.WriteLine(s);
+                }
+            }
+        }
     }
 }
