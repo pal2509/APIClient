@@ -9,6 +9,7 @@ using System.Net.Http;
 using Newtonsoft.Json;
 using System.Threading;
 using static APIClient.Program;
+using System.Net.Sockets;
 
 namespace APIClient
 {
@@ -30,7 +31,7 @@ namespace APIClient
             startpoint = startpoint + host;
 
 
-
+            //Ciclo para o login
             bool k = true, l = false;
             while (k)
             {
@@ -135,6 +136,7 @@ namespace APIClient
 
                     if (token > 0)
                     {
+                        //Ciclo para o serviço de ficheiros
                         while (l)
                         {
                             Console.WriteLine("1-Lista ficherios");
@@ -267,6 +269,12 @@ namespace APIClient
         }
 
 
+        /// <summary>
+        /// Interface para o uso do serviço de mensagens
+        /// </summary>
+        /// <param name="startpoint"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
         static public int Messages(string startpoint, int token)
         {
             bool k = true;
@@ -289,6 +297,7 @@ namespace APIClient
                             }
                         case 2:
                             {
+                                //Pedido para ver os canais subscritos
                                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/messages/GetUChannels/" + token.ToString());
                                 request.Method = HTTP_Verb.GET.ToString(); //Verbo do pedido http
 
@@ -309,6 +318,7 @@ namespace APIClient
                                         }
                                     }
 
+                                    //Escrita dos canais no ecrã
                                     foreach (string s in o) Console.WriteLine(s);
 
                                 }
@@ -320,6 +330,7 @@ namespace APIClient
                             }
                         case 3:
                             {
+                                //Pedido de todos os canais
                                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/messages/GetAllChannels/" + token.ToString());
                                 request.Method = HTTP_Verb.GET.ToString(); //Verbo do pedido http
 
@@ -342,15 +353,18 @@ namespace APIClient
                                             }
                                         }
 
+                                        //Escrita dos canais no ecrã
                                         foreach (string s in o) Console.WriteLine(s);
                                     }
 
                                 }
 
+                                //Subscrição a um canal
                                 Console.WriteLine("Nome do canal a subscrever?");
 
                                 string c = Console.ReadLine();
 
+                                //Pedido de subscrição a um canal
                                 request = (HttpWebRequest)WebRequest.Create(startpoint + "/messages/SubChannel/" + token.ToString());
                                 request.Method = HTTP_Verb.POST.ToString(); //Verbo do pedido http
                                 request.ContentType = "multipart/form-data";//
@@ -376,10 +390,12 @@ namespace APIClient
 
                                 }
 
+                                //Interpretação das respostas
                                 int f = int.Parse(r);
                                 if (f == -1) Console.WriteLine("Token inválido!!!");
                                 if (f == -2) Console.WriteLine("Canal não existe!!!");
                                 if (f == 1) Console.WriteLine("Sucesso");
+                                if (f == -3) Console.WriteLine("Já está subscrito.");
 
                                 break;
                             }
@@ -388,27 +404,91 @@ namespace APIClient
 
                                 Console.WriteLine("Nome do canal?");
                                 string channel = Console.ReadLine();
-                                //GetMessage(startpoint,token,channel);
-                                var autoEvent = new AutoResetEvent(true);
+                                GetMessage(startpoint,token,channel);
 
-                                var CheckMessages = new GetMessages(startpoint,token,channel);
 
-                                var stateTimer = new Timer(CheckMessages.CheckStatus, autoEvent, 0, 20 * 1000);
+                                //// Data buffer for incoming data.  
+                                //byte[] bytes = new byte[1024];
+
+                                //// Connect to a remote device.  
+                                //try
+                                //{
+                                //    // Establish the remote endpoint for the socket.  
+                                //    // This example uses port 11000 on the local computer.  
+                                //    IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
+                                //    IPAddress ipAddress = ipHostInfo.AddressList[0];
+                                //    IPEndPoint remoteEP = new IPEndPoint(ipAddress, 11000);
+
+                                //    // Create a TCP/IP  socket.  
+                                //    Socket sender = new Socket(ipAddress.AddressFamily,
+                                //        SocketType.Stream, ProtocolType.Tcp);
+
+                                //    // Connect the socket to the remote endpoint. Catch any errors.  
+                                //    try
+                                //    {
+                                //        sender.Connect(remoteEP);
+
+                                //        Console.WriteLine("Socket connected to {0}",
+                                //            sender.RemoteEndPoint.ToString());
+
+                                //        // Encode the data string into a byte array.  
+                                //        byte[] msg = Encoding.ASCII.GetBytes(string.Format("<{0}><{1}>This is a test<EOF>",token.ToString(),channel));
+
+                                //        // Send the data through the socket.  
+                                //        int bytesSent = sender.Send(msg);
+
+                                //        // Release the socket.  
+                                //        sender.Shutdown(SocketShutdown.Both);
+                                //        sender.Close();
+
+                                //    }
+                                //    catch (ArgumentNullException ane)
+                                //    {
+                                //        Console.WriteLine("ArgumentNullException : {0}", ane.ToString());
+                                //    }
+                                //    catch (SocketException se)
+                                //    {
+                                //        Console.WriteLine("SocketException : {0}", se.ToString());
+                                //    }
+                                //    catch (Exception e)
+                                //    {
+                                //        Console.WriteLine("Unexpected exception : {0}", e.ToString());
+                                //    }
+
+                                //}
+                                //catch (Exception e)
+                                //{
+                                //    Console.WriteLine(e.ToString());
+                                //}
+
+
+
+                                var autoEvent = new AutoResetEvent(true);//Propriedade para o timer se auto reiniciar
+
+                                var CheckMessages = new GetMessages(startpoint, token, channel);//Construção do objeto para tratar as mensagens
+
+                                var stateTimer = new Timer(CheckMessages.CheckStatus, autoEvent, 20*1000, 20 * 1000);//Criação do temporizador
+                                //Passando-lhe o metodo do objeto anterior que tem de utilizar,a propriedade de auto reiniciar,tempo até a primeira execução
+                                //no fim o tempo entre execuções consecutivas
+
+                                //Leitura da proxima tecla pressionada para saber se é para mandar mensagem ou para sair do chat
+                                //Se ESC(Escape) for pressionado sai-se do chat, se for escrito qualquer coisa e dps um enter no final é enviada
+                                //uma mensagem para esse canal
                                 ConsoleKey key;
                                 bool j = true;
                                 while (j)
                                 {
-                                    key = Console.ReadKey().Key;
+                                    key = Console.ReadKey().Key;//Leitura da tecla
                                     if (key == ConsoleKey.Escape)
                                     {
-                                        stateTimer.Dispose();
+                                        stateTimer.Dispose();//Parar o temporizador
                                         j = false;
                                         break;
                                     }
                                     else
                                     {
-                                        string message = key + Console.ReadLine();
-                                        SendMessage(startpoint, token, channel, message);
+                                        string message = key + Console.ReadLine();//Leitura da mensagem
+                                        SendMessage(startpoint, token, channel, message);//Envio da mensagem
                                     }
                                 }
                                 break;
@@ -428,18 +508,24 @@ namespace APIClient
 
         }
 
-        
+        /// <summary>
+        /// Método para o envio de mensagem
+        /// </summary>
+        /// <param name="startpoint"></param>
+        /// <param name="token"></param>
+        /// <param name="channel"></param>
+        /// <param name="message"></param>
         static public void SendMessage(string startpoint, int token, string channel, string message)
         {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/messages/SendMessage/" + token.ToString());
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/messages/SendMessage/" + token.ToString());//Criação do endereço de acesso
             request.Method = HTTP_Verb.POST.ToString(); //Verbo do pedido http
-            request.ContentType = "multipart/form-data";//
-            request.Headers.Add("channel", channel);
+            request.ContentType = "multipart/form-data";//Tipo de dados
+            request.Headers.Add("channel", channel);//Headers com o canal e a menssagem
             request.Headers.Add("message", message);
-            request.ContentLength = 0;
+            request.ContentLength = 0;//Tamanho dos dados
 
 
-            HttpWebResponse res = (HttpWebResponse)request.GetResponse();
+            HttpWebResponse res = (HttpWebResponse)request.GetResponse();//Obtenção da resposta
             string r = null;
             //Criação do fluxo para a resposta
             using (Stream responseStream = res.GetResponseStream())
@@ -456,6 +542,7 @@ namespace APIClient
                 }
 
             }
+            //Interpretação da resposta
             int f = int.Parse(r);
             if (f == -1) Console.WriteLine("Token inválido!!!");
             if (f == -2) Console.WriteLine("Não está subscrito!!!");
@@ -463,7 +550,12 @@ namespace APIClient
 
 
 
-
+        /// <summary>
+        /// Metodo de para receber mensagens de um canal
+        /// </summary>
+        /// <param name="startpoint"></param>
+        /// <param name="token"></param>
+        /// <param name="channel"></param>
         static public void GetMessage(string startpoint, int token, string channel)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/messages/GetMessage/" + token.ToString());
@@ -504,7 +596,14 @@ namespace APIClient
         }
 
 
-
+        /// <summary>
+        /// Metodo para fazer copia de ficheiros
+        /// </summary>
+        /// <param name="filename">Nome do ficheiro a copiar</param>
+        /// <param name="newfile">Nome para o novo ficheiro</param>
+        /// <param name="startpoint">Ponto de incio para construção do link de acesso á api</param>
+        /// <param name="token">Token do utilizador</param>
+        /// <returns></returns>
         static public int CopyFile(string filename, string newfile,string startpoint, int token)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/fileserver/FileCopy/" + token.ToString());
@@ -534,7 +633,13 @@ namespace APIClient
 
         }
 
-
+        /// <summary>
+        /// Metodo para aceitar pedidos de registo
+        /// </summary>
+        /// <param name="startpoint"></param>
+        /// <param name="token"></param>
+        /// <param name="username"></param>
+        /// <returns></returns>
         static public int AcceptRequest(string startpoint, int token, string username)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/fileserver/RequestManagement/" + token.ToString());
@@ -562,7 +667,11 @@ namespace APIClient
             }
         }
 
-
+        /// <summary>
+        /// Metodo para pedir a lista de pedidos de registo
+        /// </summary>
+        /// <param name="startpoint"></param>
+        /// <param name="token"></param>
         static public void RequestList(string startpoint, int token)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/fileserver/RequestList/" + token.ToString());
@@ -653,6 +762,13 @@ namespace APIClient
             }
         }
 
+        /// <summary>
+        /// Metodo para apgar um ficheiro
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <param name="startpoint"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
         static public int DeleteFile(string filename, string startpoint, int token)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/fileserver/FileDelete/" + token.ToString());
@@ -683,6 +799,13 @@ namespace APIClient
 
         }
 
+        /// <summary>
+        /// Metodo para registo de um pedido de registo
+        /// </summary>
+        /// <param name="usrnm"></param>
+        /// <param name="psswd"></param>
+        /// <param name="startpoint"></param>
+        /// <returns></returns>
         static public int Registration(string usrnm, string psswd, string startpoint)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/fileserver/SignUp");
@@ -886,11 +1009,11 @@ namespace APIClient
             }
             return int.Parse(res.Headers["r"]);
         }
-
-
- 
     }
 
+    /// <summary>
+    /// Classe para tratar das mensagens
+    /// </summary>
     class GetMessages
     {
         private int token;
@@ -912,7 +1035,7 @@ namespace APIClient
             GetMessage(startpoint, token, channel);
 
         }
-
+        
         public void GetMessage(string startpoint, int token, string channel)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(startpoint + "/messages/GetMessage/" + token.ToString());
